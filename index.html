@@ -467,13 +467,11 @@
     const MAX_YAZI = 24;
     const MIN_YAZI = 12;
 
-    /* ---------- Cihaz başına günlük video limiti ---------- */
-    // Ücretsiz altyazı kotasını korumak için. Sayıyı buradan değiştirebilirsin.
     const GUNLUK_VIDEO_LIMITI = 5;
     const LIMIT_ANAHTARI = "cinelex_gunluk_limit";
 
     function bugunKodu() {
-        return new Date().toLocaleDateString("sv-SE"); // yerel saate göre YYYY-AA-GG
+        return new Date().toLocaleDateString("sv-SE");
     }
 
     function kullanilanHak() {
@@ -600,7 +598,6 @@
         return kelime.toLowerCase() + "||" + (cumle || "").toLowerCase();
     }
 
-    // Başarısız ("—" / boş) çeviriler önbelleğe alınmaz; böylece hover'da tekrar denenir.
     function ceviriGecerliMi(data) {
         return !!(data && data.ana && data.ana !== "—");
     }
@@ -860,11 +857,13 @@
 
             if (tekrarDinleniyor && aktifSatirIndex !== -1) {
                 const aktifSatir = altyaziListesi[aktifSatirIndex];
-                if (!programSeek && suAn >= aktifSatir.bitis - 0.12) {
+                if (!programSeek && suAn >= aktifSatir.bitis - 0.25) {
                     tekrarDinleniyor = false;
                     if (aktifSatir.soru_var_mi && !aktifSatir.cozuldu) {
                         boslukKilidiAktif = true;
                         oynatici.pauseVideo();
+                        oynatici.seekTo(Math.max(0, aktifSatir.baslangic), true);
+
                         const duruma = $("durum-mesaji");
                         if (duruma) {
                             duruma.style.color = "#c4b5fd";
@@ -893,13 +892,15 @@
 
             if (aktifSatirIndex !== -1) {
                 const mevcutSatir = altyaziListesi[aktifSatirIndex];
-                const cumleBittiMi = suAn >= mevcutSatir.bitis - 0.12;
+                const cumleBittiMi = suAn >= mevcutSatir.bitis - 0.25;
                 const sonrakiSatiraGeciyorMu = (bulunanIndex !== -1 && bulunanIndex > aktifSatirIndex);
 
                 if (mevcutSatir.soru_var_mi && !mevcutSatir.cozuldu && !boslukKilidiAktif &&
                     (cumleBittiMi || sonrakiSatiraGeciyorMu)) {
                     boslukKilidiAktif = true;
                     oynatici.pauseVideo();
+                    oynatici.seekTo(Math.max(0, mevcutSatir.baslangic), true);
+
                     const duruma = $("durum-mesaji");
                     if (duruma) {
                         duruma.style.color = "#c4b5fd";
@@ -931,7 +932,7 @@
             if (aktifSatirIndex !== -1) {
                 parcaVurgusunuGuncelle(suAn, altyaziListesi[aktifSatirIndex]);
             }
-        }, 50);
+        }, 40);
     }
 
     function parcaVurgusunuGuncelle(suAn, satir) {
@@ -1133,7 +1134,6 @@
         }
     }
 
-    /* ---------- Flashcard Kart Oyunu ---------- */
     function kartOyununuBaslat() {
         if (ogrenilenKelimeler.length === 0) return;
         if (oynatici && typeof oynatici.pauseVideo === "function") oynatici.pauseVideo();

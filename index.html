@@ -855,6 +855,12 @@
                 oncekiZaman = suAn;
             }
 
+            // Kilitliyken döngünün başa sarmasını ve inputu sıfırlamasını engelle
+            if (boslukKilidiAktif) {
+                if (durum === YT.PlayerState.PLAYING) oynatici.pauseVideo();
+                return;
+            }
+
             if (tekrarDinleniyor && aktifSatirIndex !== -1) {
                 const aktifSatir = altyaziListesi[aktifSatirIndex];
                 if (!programSeek && suAn >= aktifSatir.bitis - 0.25) {
@@ -874,11 +880,6 @@
                     }
                 }
                 parcaVurgusunuGuncelle(suAn, aktifSatir);
-                return;
-            }
-
-            if (boslukKilidiAktif) {
-                if (durum === YT.PlayerState.PLAYING) oynatici.pauseVideo();
                 return;
             }
 

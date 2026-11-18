@@ -467,6 +467,10 @@
     const MAX_YAZI = 24;
     const MIN_YAZI = 12;
 
+    // Cümle bitişinden bu kadar saniye ÖNCE videoyu durdur (zamanlayıcı gecikmesi
+    // yüzünden sonraki cümleden tek bir ses bile kaçmasın diye).
+    const DURMA_PAYI = 0.04;
+
     window.addEventListener("popstate", () => {
         if ($("studyo-alani").style.display === "grid") {
             girisEkraniniGoster();
@@ -797,6 +801,29 @@
         d.innerText = "İzleniyor... (Durdur: Boşluk • Tekrar Dinle: R)";
     }
 
+    /**
+     * Cümle bittiğinde videoyu OLDUĞU YERDE dondurur.
+     * - Geri sarma (seekTo) YOK.
+     * - Input'a dokunulmaz (yeniden çizilmez, sıfırlanmaz); sadece odak verilir.
+     * - Kilit, doğru cevap girilene (veya "Göster & Geç") kadar açılmaz.
+     */
+    function videoyuBoslukIcinKilitle() {
+        if (boslukKilidiAktif) return;
+        boslukKilidiAktif = true;
+        tekrarDinleniyor = false;
+        hoverDuraklatildi = false;
+
+        if (oynatici && typeof oynatici.pauseVideo === "function") oynatici.pauseVideo();
+
+        const duruma = $("durum-mesaji");
+        if (duruma) {
+            duruma.style.color = "#c4b5fd";
+            duruma.innerText = "⏸ Boşluktaki kelimeyi yaz ve Enter'a bas (İpucu: Tab • Tekrar Dinle: R)";
+        }
+        const girdi = $("kelime-girdisi");
+        if (girdi && document.activeElement !== girdi) girdi.focus();
+    }
+
     function altyaziTakibiniBaslat() {
         if (kontrolZamanlayici) clearInterval(kontrolZamanlayici);
 
@@ -814,28 +841,22 @@
                 oncekiZaman = suAn;
             }
 
-            // Kilit aktifken döngü tamamen dondurulur; video başa sarmaz, input sıfırlanmaz.
+            // KİLİT AKTİFKEN: döngü tamamen dondurulur.
+            // Video yalnızca pause'da tutulur; seek yok, ekran/input güncellenmez.
             if (boslukKilidiAktif) {
                 if (durum === YT.PlayerState.PLAYING) oynatici.pauseVideo();
+                oncekiZaman = suAn;
                 return;
             }
 
+            // "Tekrar Dinle" modunda: cümle bitince tekrar kilitle (geri sarma yok).
             if (tekrarDinleniyor && aktifSatirIndex !== -1) {
                 const aktifSatir = altyaziListesi[aktifSatirIndex];
-                if (!programSeek && suAn >= aktifSatir.bitis) {
+                if (!programSeek && suAn >= aktifSatir.bitis - DURMA_PAYI) {
                     tekrarDinleniyor = false;
                     if (aktifSatir.soru_var_mi && !aktifSatir.cozuldu) {
-                        boslukKilidiAktif = true;
-                        oynatici.pauseVideo();
-                        oynatici.seekTo(Math.max(0, aktifSatir.baslangic), true);
-
-                        const duruma = $("durum-mesaji");
-                        if (duruma) {
-                            duruma.style.color = "#c4b5fd";
-                            duruma.innerText = "⏸ Boşluktaki kelimeyi yaz ve Enter'a bas (İpucu: Tab • Tekrar Dinle: R)";
-                        }
-                        const girdi = $("kelime-girdisi");
-                        if (girdi) girdi.focus();
+                        videoyuBoslukIcinKilitle();
+                        return;
                     }
                 }
                 parcaVurgusunuGuncelle(suAn, aktifSatir);
@@ -850,24 +871,15 @@
                 }
             }
 
+            // Aktif cümle bitti (veya sonraki cümleye geçilmek üzere) ve boşluk çözülmedi → DUR.
             if (aktifSatirIndex !== -1) {
                 const mevcutSatir = altyaziListesi[aktifSatirIndex];
-                const cumleBittiMi = suAn >= mevcutSatir.bitis;
+                const cumleBittiMi = suAn >= mevcutSatir.bitis - DURMA_PAYI;
                 const sonrakiSatiraGeciyorMu = (bulunanIndex !== -1 && bulunanIndex > aktifSatirIndex);
 
-                if (mevcutSatir.soru_var_mi && !mevcutSatir.cozuldu && !boslukKilidiAktif &&
+                if (mevcutSatir.soru_var_mi && !mevcutSatir.cozuldu &&
                     (cumleBittiMi || sonrakiSatiraGeciyorMu)) {
-                    boslukKilidiAktif = true;
-                    oynatici.pauseVideo();
-                    oynatici.seekTo(Math.max(0, mevcutSatir.baslangic), true);
-
-                    const duruma = $("durum-mesaji");
-                    if (duruma) {
-                        duruma.style.color = "#c4b5fd";
-                        duruma.innerText = "⏸ Boşluktaki kelimeyi yaz ve Enter'a bas (İpucu: Tab • Tekrar Dinle: R)";
-                    }
-                    const girdi = $("kelime-girdisi");
-                    if (girdi) girdi.focus();
+                    videoyuBoslukIcinKilitle();
                     return;
                 }
             }
@@ -892,7 +904,7 @@
             if (aktifSatirIndex !== -1) {
                 parcaVurgusunuGuncelle(suAn, altyaziListesi[aktifSatirIndex]);
             }
-        }, 40);
+        }, 25);
     }
 
     function parcaVurgusunuGuncelle(suAn, satir) {
@@ -957,7 +969,7 @@
             ipucuAlani.innerHTML = satir.turkce_ipucu ? `<span class="tr-ipucu-rozet">Anlamı: ${esc(satir.turkce_ipucu)}</span>` : "";
             kontrolButonlari.style.display = "flex";
             durumMesaji.style.color = "#c4b5fd";
-            durumMesaji.innerText = "🎧 Cümle dinleniyor... Noktalandığında yazabilirsin (İpucu: Tab)";
+            durumMesaji.innerText = "🎧 Cümle dinleniyor... Noktalandığında video duracak, kelimeyi yazabilirsin (İpucu: Tab)";
         } else {
             kart.classList.remove("soru-aktif");
             seviyeAlani.innerHTML = "";
@@ -1017,6 +1029,7 @@
             if (kontrolButonlari) kontrolButonlari.style.display = "none";
             kelimeDefterineEkle(aktifSoru);
 
+            // Video durduğu yerden (seek yapmadan) kaldığı noktadan devam eder.
             if (oynatici && typeof oynatici.playVideo === "function") oynatici.playVideo();
         } else {
             seri = 0;
@@ -1041,6 +1054,7 @@
         }
     }
 
+    // Kullanıcı isteyerek cümleyi baştan dinler; bitince yine olduğu yerde kilitlenir.
     function sahneyiTekrarDinle() {
         const aktifSoru = altyaziListesi[aktifSatirIndex];
         if (!aktifSoru || !oynatici) return;

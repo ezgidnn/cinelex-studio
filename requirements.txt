@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-youtube-transcript-api
-groq
-python-dotenv
-requests
-httpx
-urllib3
-pydantic

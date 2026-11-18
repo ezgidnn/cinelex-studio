@@ -363,7 +363,7 @@
     <div class="istatistikler">
         <div class="rozet">🔥 <span id="seri-sayaci">0</span> Seri</div>
         <div class="rozet">⚡ <span id="xp-sayaci">0</span> XP</div>
-        <div class="rozet" title="Bugün kalan video hakkın">🎟️ <span id="hak-sayaci">-</span></div>
+        <div class="rozet">♾️ <span style="color:var(--success);">Sınırsız Mod</span></div>
         <button class="mini-btn" id="yeni-sahne-btn" style="display:none;" onclick="anaEkranaDon()">+ Yeni Sahne</button>
     </div>
 </header>
@@ -386,7 +386,7 @@
         <button class="ana-buton" id="baslat-butonu" onclick="videoyuHazirla()">Stüdyoyu Başlat</button>
     </div>
 
-    <div id="hak-bilgisi" style="margin-top:14px; font-size:13px; font-weight:600; color:var(--text-muted);"></div>
+    <div id="hak-bilgisi" style="margin-top:14px; font-size:13px; font-weight:600; color:var(--success);">✨ Sınırsız video kullanım hakkı aktiftir. İstediğin kadar video çalışabilirsin!</div>
 
     <div class="yukleniyor-overlay" id="yukleniyor">
         ✨ Cümleler tek tek ayrılıyor ve seçtiğin seviyeye uygun kelimeler analiz ediliyor...
@@ -466,43 +466,6 @@
 
     const MAX_YAZI = 24;
     const MIN_YAZI = 12;
-
-    const GUNLUK_VIDEO_LIMITI = 5;
-    const LIMIT_ANAHTARI = "cinelex_gunluk_limit";
-
-    function bugunKodu() {
-        return new Date().toLocaleDateString("sv-SE");
-    }
-
-    function kullanilanHak() {
-        try {
-            const kayit = JSON.parse(localStorage.getItem(LIMIT_ANAHTARI) || "null");
-            if (kayit && kayit.gun === bugunKodu()) return Number(kayit.sayi) || 0;
-        } catch (e) {}
-        return 0;
-    }
-
-    function kalanHak() {
-        return Math.max(0, GUNLUK_VIDEO_LIMITI - kullanilanHak());
-    }
-
-    function hakKullan() {
-        try {
-            localStorage.setItem(LIMIT_ANAHTARI, JSON.stringify({ gun: bugunKodu(), sayi: kullanilanHak() + 1 }));
-        } catch (e) {}
-        hakGoster();
-    }
-
-    function hakGoster() {
-        const el = $("hak-sayaci");
-        if (el) el.innerText = `${kalanHak()}/${GUNLUK_VIDEO_LIMITI}`;
-        const bilgi = $("hak-bilgisi");
-        if (bilgi) {
-            bilgi.innerText = kalanHak() > 0
-                ? `Bugün kalan video hakkın: ${kalanHak()} / ${GUNLUK_VIDEO_LIMITI}`
-                : `Bugünkü ${GUNLUK_VIDEO_LIMITI} video hakkın doldu. Yarın tekrar gel!`;
-        }
-    }
 
     window.addEventListener("popstate", () => {
         if ($("studyo-alani").style.display === "grid") {
@@ -724,9 +687,6 @@
         const link = $("youtube-linki").value.trim();
         const seviye = $("seviye-secici").value;
         if (!link) return alert("Lütfen bir YouTube linki girin.");
-        if (kalanHak() <= 0) {
-            return alert(`Bugünkü ${GUNLUK_VIDEO_LIMITI} video hakkın doldu. Yarın tekrar deneyebilirsin.`);
-        }
 
         const buton = $("baslat-butonu");
         const yukleniyor = $("yukleniyor");
@@ -746,7 +706,6 @@
             }
 
             const veri = await yanit.json();
-            hakKullan();
             altyaziListesi = veri.altyazilar;
             aktifSatirIndex = -1;
             aktifParcaIndex = -1;
@@ -855,7 +814,7 @@
                 oncekiZaman = suAn;
             }
 
-            // Kilitliyken döngünün başa sarmasını ve inputu sıfırlamasını engelle
+            // Kilitliyken (kullanıcı boşlukta beklerken veya yazarken) döngünün başa sarmasını ve inputu sıfırlamasını TAMAMEN ENGELLE
             if (boslukKilidiAktif) {
                 if (durum === YT.PlayerState.PLAYING) oynatici.pauseVideo();
                 return;
@@ -1191,8 +1150,6 @@
     function kartOyununuKapat() {
         $("oyun-overlay").style.display = "none";
     }
-
-    hakGoster();
 </script>
 
 </body>

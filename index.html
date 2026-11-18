@@ -371,7 +371,7 @@
 <div class="giris-ekrani" id="giris-ekrani">
     <div class="ust-etiket">AI Destekli İnteraktif Dil Stüdyosu</div>
     <h1>Sahneleri İzle, Duyduğunu Yaz, Kelimeleri Kalıcı Öğren.</h1>
-    <p>Sevdiğin dizilerden, filmlerden veya konuşmalardan bir YouTube linki yapıştır. Kendi dil seviyeni seç; yapay zeka seviyene uygun kelimeleri tespit edip boşluk bıraksın, cümle noktalandığında durdursun ve dinleyerek pratik yapmanı sağlasın.</p>
+    <p>Sevdiğin dizilerden, filmlerden veya konuşmalardan bir YouTube linki yapıştır. Kendi dil seviyeni seç; yapay zeka seviyene uygun kelimeleri tespit edip boşluk bıraksın, cümle bittiğinde durdursun ve dinleyerek pratik yapmanı sağlasın.</p>
 
     <div class="ayar-bari">
         <select id="seviye-secici" class="seviye-secici">
@@ -814,7 +814,7 @@
                 oncekiZaman = suAn;
             }
 
-            // Kilitliyken (kullanıcı boşlukta beklerken veya yazarken) döngünün başa sarmasını ve inputu sıfırlamasını TAMAMEN ENGELLE
+            // Kilit aktifken döngü tamamen dondurulur; video başa sarmaz, input sıfırlanmaz.
             if (boslukKilidiAktif) {
                 if (durum === YT.PlayerState.PLAYING) oynatici.pauseVideo();
                 return;
@@ -822,7 +822,7 @@
 
             if (tekrarDinleniyor && aktifSatirIndex !== -1) {
                 const aktifSatir = altyaziListesi[aktifSatirIndex];
-                if (!programSeek && suAn >= aktifSatir.bitis - 0.25) {
+                if (!programSeek && suAn >= aktifSatir.bitis) {
                     tekrarDinleniyor = false;
                     if (aktifSatir.soru_var_mi && !aktifSatir.cozuldu) {
                         boslukKilidiAktif = true;
@@ -852,7 +852,7 @@
 
             if (aktifSatirIndex !== -1) {
                 const mevcutSatir = altyaziListesi[aktifSatirIndex];
-                const cumleBittiMi = suAn >= mevcutSatir.bitis - 0.25;
+                const cumleBittiMi = suAn >= mevcutSatir.bitis;
                 const sonrakiSatiraGeciyorMu = (bulunanIndex !== -1 && bulunanIndex > aktifSatirIndex);
 
                 if (mevcutSatir.soru_var_mi && !mevcutSatir.cozuldu && !boslukKilidiAktif &&
